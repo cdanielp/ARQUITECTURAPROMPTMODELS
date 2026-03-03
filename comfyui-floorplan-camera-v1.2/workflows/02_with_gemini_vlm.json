@@ -1,0 +1,193 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "your_floorplan.png"
+    },
+    "_meta": {"title": "1. Cargar Plano"}
+  },
+  "2": {
+    "class_type": "ShotPresetsNode",
+    "inputs": {
+      "shot": "Cocina \u2192 Hacia isla"
+    },
+    "_meta": {"title": "2. Shot Preset"}
+  },
+  "3": {
+    "class_type": "FloorPlanCameraNode",
+    "inputs": {
+      "image_plan": ["1", 0],
+      "cam_x": ["2", 0],
+      "cam_y": ["2", 1],
+      "cam_rotation": ["2", 2],
+      "prompt_mode": "interior_photo",
+      "style_text": "",
+      "custom_prefix": "<sks>"
+    },
+    "_meta": {"title": "3. FloorPlan Camera \ud83d\udcd0"}
+  },
+  "4": {
+    "class_type": "LensAndCameraPresetNode",
+    "inputs": {
+      "preset": "architectural_neutral",
+      "room_type": ["2", 3]
+    },
+    "_meta": {"title": "4. Lens & Camera \ud83d\udcf7"}
+  },
+  "5": {
+    "class_type": "LightingIntentNode",
+    "inputs": {
+      "mood": "day_soft",
+      "room_type": ["2", 3]
+    },
+    "_meta": {"title": "5. Lighting Intent \ud83d\udca1"}
+  },
+  "6": {
+    "class_type": "ArchNegativePromptNode",
+    "inputs": {
+      "room_type": ["2", 3],
+      "render_engine": "qwen_edit",
+      "extra_negative": ""
+    },
+    "_meta": {"title": "6. Arch Negative \ud83d\udeab"}
+  },
+  "8": {
+    "class_type": "GoogleAI_TextVisionNode",
+    "inputs": {
+      "image": ["1", 0],
+      "prompt": "You are an expert architect analyzing a floor plan. The camera is positioned at the highlighted area. Analyze this floor plan and respond with ONLY this format:\n\nROOM_TYPE: [kitchen/bathroom/living_room/bedroom/dining_room/hallway/office]\nVISIBLE_ELEMENTS: [list what is visible: windows, doors, island, countertops, appliances, furniture, etc.]\nMATERIALS_HINTS: [any materials visible in the plan annotations]\nSPACE_CHARACTER: [compact/medium/spacious]\nNOTABLE_FEATURES: [anything special: double height, skylight, open plan, etc.]\n\nBe specific and architectural. Only describe what you can actually see in the plan.",
+      "model": "gemini-2.5-flash",
+      "api_key": "",
+      "system_prompt": "You are a licensed architect with 20 years of experience reading and interpreting architectural floor plans. You identify room types, spatial relationships, structural elements, openings, and furniture layouts from plan drawings. Always respond in the exact format requested. Be precise and factual - only describe what you can see in the plan, never invent elements."
+    },
+    "_meta": {"title": "8. Gemini VLM \u2014 Analiza Plano \ud83e\udde0"}
+  },
+  "7": {
+    "class_type": "ArchPromptCombinerNode",
+    "inputs": {
+      "camera_prompt": ["3", 0],
+      "lens_prompt": ["4", 0],
+      "lighting_prompt": ["5", 0],
+      "vlm_description": ["8", 0],
+      "style_text": "contemporary Mexican architecture, warm tones, natural materials"
+    },
+    "_meta": {"title": "7. Prompt Combiner \ud83d\udd17"}
+  },
+  "10": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": ["7", 0]
+    },
+    "_meta": {"title": "Combined Prompt (debug)"}
+  },
+  "11": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": ["6", 0]
+    },
+    "_meta": {"title": "Negative Prompt (debug)"}
+  },
+  "12": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": ["3", 1]
+    },
+    "_meta": {"title": "Camera Info (debug)"}
+  },
+  "13": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": ["8", 0]
+    },
+    "_meta": {"title": "Gemini Analysis (debug)"}
+  },
+  "20": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "_meta": {"title": "VAE Loader"}
+  },
+  "21": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b.safetensors",
+      "type": "sd3"
+    },
+    "_meta": {"title": "CLIP Loader (Qwen VL)"}
+  },
+  "22": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_bf16.safetensors",
+      "weight_dtype": "bf16"
+    },
+    "_meta": {"title": "UNET Loader (Qwen Edit)"}
+  },
+  "23": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": ["22", 0],
+      "lora_name": "qwen-image-edit-2511-multiple-angles-lora.safetensors",
+      "strength_model": 1.0
+    },
+    "_meta": {"title": "LoRA: Multiple Angles"}
+  },
+  "30": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": ["1", 0],
+      "vae": ["20", 0]
+    },
+    "_meta": {"title": "VAE Encode (plano)"}
+  },
+  "31": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "text": ["7", 0],
+      "clip": ["21", 0]
+    },
+    "_meta": {"title": "CLIP Encode (prompt)"}
+  },
+  "32": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "text": ["6", 0],
+      "clip": ["21", 0]
+    },
+    "_meta": {"title": "CLIP Encode (negative)"}
+  },
+  "40": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["23", 0],
+      "positive": ["31", 0],
+      "negative": ["32", 0],
+      "latent_image": ["30", 0],
+      "seed": 0,
+      "steps": 4,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1.0,
+      "control_after_generate": "randomize"
+    },
+    "_meta": {"title": "KSampler (4 steps)"}
+  },
+  "41": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["40", 0],
+      "vae": ["20", 0]
+    },
+    "_meta": {"title": "VAE Decode"}
+  },
+  "50": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["41", 0],
+      "filename_prefix": "FloorPlan_VLM_Render"
+    },
+    "_meta": {"title": "Guardar Render"}
+  }
+}
