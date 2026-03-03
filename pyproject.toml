@@ -1,0 +1,18 @@
+[project]
+name = "comfyui-floorplan-camera"
+description = "Interactive 2D camera placement on architectural floor plans for ComfyUI. Drag a camera icon over your floor plan and rotate it to set viewing angle. Outputs formatted prompt strings compatible with Qwen Image Edit and other image generation nodes."
+version = "1.0.0"
+license = "MIT"
+requires-python = ">=3.9"
+dependencies = [
+    "Pillow>=9.0.0",
+    "numpy>=1.21.0",
+]
+
+[project.urls]
+Repository = "https://github.com/your-user/comfyui-floorplan-camera"
+
+[tool.comfy]
+PublisherId = "prompt-models-studio"
+DisplayName = "FloorPlan Camera"
+Icon = "📐"

@@ -1,0 +1,182 @@
+{
+  "last_node_id": 5,
+  "last_link_id": 5,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [100, 300],
+      "size": [320, 320],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [1, 4]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "your_floorplan.png",
+        "image"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "FloorPlanCameraNode",
+      "pos": [500, 300],
+      "size": [480, 640],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_plan",
+          "type": "IMAGE",
+          "link": 1
+        },
+        {
+          "name": "image_style",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "mat_stack",
+          "type": "MAT_STACK",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [2]
+        },
+        {
+          "name": "camera_info",
+          "type": "STRING",
+          "links": [3]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "FloorPlanCameraNode"
+      },
+      "widgets_values": [
+        0.5,
+        0.5,
+        0.0,
+        "interior_photo",
+        "",
+        "<sks>"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "cc56276d-0572-47e2-986f-060f2362edea",
+      "pos": [1060, 300],
+      "size": [480, 486],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 2
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [5]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "cc56276d-0572-47e2-986f-060f2362edea"
+      },
+      "widgets_values": [
+        "",
+        null,
+        null,
+        "qwen-image-edit-2511-multiple-angles-lora.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "SaveImage",
+      "pos": [1620, 300],
+      "size": [480, 440],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 5
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "FloorPlan_Render"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "ShowText|pysssss",
+      "pos": [500, 980],
+      "size": [480, 180],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 3
+        }
+      ],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [""]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "IMAGE"],
+    [2, 2, 0, 3, 0, "STRING"],
+    [3, 2, 1, 5, 0, "STRING"],
+    [4, 1, 0, 3, 1, "IMAGE"],
+    [5, 3, 0, 4, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7,
+      "offset": [0, 0]
+    }
+  },
+  "version": 0.4
+}
