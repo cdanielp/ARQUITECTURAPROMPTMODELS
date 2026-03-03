@@ -12,11 +12,6 @@ import hashlib
 import os
 import folder_paths
 
-# ─────────────────────────────────────────────────────────────
-# Cache para preview images (evitar re-guardar en cada frame)
-# ─────────────────────────────────────────────────────────────
-_preview_cache = {}
-
 
 def _tensor_to_pil(tensor):
     """ComfyUI IMAGE tensor [B,H,W,C] float32 → PIL Image"""
@@ -31,7 +26,6 @@ def _pil_to_base64(pil_img, fmt="PNG"):
 
 
 def _rotation_to_cardinal(degrees):
-    """Map 0-360 degrees to cardinal/intercardinal direction."""
     dirs = [
         (0,    22.5,  "north"),
         (22.5, 67.5,  "northeast"),
@@ -51,7 +45,6 @@ def _rotation_to_cardinal(degrees):
 
 
 def _rotation_to_facing(degrees):
-    """More natural description for interior views."""
     dirs = [
         (0,    22.5,  "towards the far wall"),
         (22.5, 67.5,  "towards the right corner"),
@@ -71,7 +64,6 @@ def _rotation_to_facing(degrees):
 
 
 def _position_to_description(cam_x, cam_y):
-    """Normalized coords → spatial description."""
     h = "left side" if cam_x < 0.33 else ("center" if cam_x < 0.66 else "right side")
     v = "back" if cam_y < 0.33 else ("middle" if cam_y < 0.66 else "front")
     if h == "center" and v == "middle":
@@ -84,7 +76,6 @@ def _position_to_description(cam_x, cam_y):
 
 
 def _position_to_zone(cam_x, cam_y):
-    """Simplified zone for prompt."""
     col = 0 if cam_x < 0.33 else (1 if cam_x < 0.66 else 2)
     row = 0 if cam_y < 0.33 else (1 if cam_y < 0.66 else 2)
     zones = {
@@ -103,7 +94,6 @@ class MaterialRefNode:
     """
     Chainable material reference node.
     Wraps an image + label into a MAT_STACK list.
-    Connect multiple in series to build a stack of materials.
     """
 
     @classmethod
@@ -114,7 +104,6 @@ class MaterialRefNode:
                 "label": ("STRING", {
                     "default": "floor",
                     "multiline": False,
-                    "placeholder": "e.g. floor, wall, ceiling, furniture"
                 }),
             },
             "optional": {
@@ -129,10 +118,8 @@ class MaterialRefNode:
 
     def process(self, image, label, mat_stack=None):
         pil = _tensor_to_pil(image)
-        # Resize to small thumbnail for prompt context
         pil.thumbnail((256, 256), Image.LANCZOS)
         b64 = _pil_to_base64(pil)
-
         stack = list(mat_stack) if mat_stack else []
         stack.append({"label": label.strip(), "image_b64": b64})
         return (stack,)
@@ -145,7 +132,6 @@ class MaterialRefNode:
 class FloorPlanCameraNode:
     """
     Interactive floor plan camera node.
-    Displays floor plan with draggable camera + rotation control.
     Outputs a formatted prompt STRING for Qwen Image Edit or any text encoder.
     """
 
@@ -170,13 +156,11 @@ class FloorPlanCameraNode:
                 "mat_stack": ("MAT_STACK",),
                 "style_text": ("STRING", {
                     "default": "",
-                    "multiline": True,
-                    "placeholder": "Additional style description..."
+                    "multiline": False,
                 }),
                 "custom_prefix": ("STRING", {
                     "default": "<sks>",
                     "multiline": False,
-                    "placeholder": "Custom prompt prefix token"
                 }),
             }
         }
@@ -192,7 +176,6 @@ class FloorPlanCameraNode:
                 image_style=None, mat_stack=None,
                 style_text="", custom_prefix="<sks>"):
 
-        # ── Build camera info string ──
         cardinal = _rotation_to_cardinal(cam_rotation)
         facing = _rotation_to_facing(cam_rotation)
         position = _position_to_description(cam_x, cam_y)
@@ -200,22 +183,19 @@ class FloorPlanCameraNode:
 
         camera_info = (
             f"pos: ({cam_x:.2f}, {cam_y:.2f}) zone: {zone} | "
-            f"rot: {cam_rotation:.1f}° ({cardinal}) | "
+            f"rot: {cam_rotation:.1f}deg ({cardinal}) | "
             f"facing: {facing}"
         )
 
-        # ── Build materials context ──
         mat_context = ""
         if mat_stack:
             labels = [m["label"] for m in mat_stack]
             mat_context = f", featuring {', '.join(labels)} materials"
 
-        # ── Build style context ──
         style_context = ""
         if style_text and style_text.strip():
             style_context = f", {style_text.strip()}"
 
-        # ── Generate prompt based on mode ──
         if prompt_mode == "interior_photo":
             prompt = (
                 f"interior photograph taken from the {position}, "
@@ -226,7 +206,6 @@ class FloorPlanCameraNode:
                 f"architectural interior photography"
                 f"{mat_context}{style_context}"
             )
-
         elif prompt_mode == "architectural_viz":
             prompt = (
                 f"photorealistic architectural visualization, "
@@ -237,7 +216,6 @@ class FloorPlanCameraNode:
                 f"global illumination, high detail"
                 f"{mat_context}{style_context}"
             )
-
         elif prompt_mode == "custom_prefix":
             prefix = custom_prefix.strip() if custom_prefix else "<sks>"
             prompt = (
@@ -247,24 +225,17 @@ class FloorPlanCameraNode:
                 f"eye-level"
                 f"{mat_context}{style_context}"
             )
-
         else:
             prompt = f"interior view from {position}, looking {cardinal}"
 
-        # ── Save preview image for JS frontend ──
+        # Save preview for JS frontend
         pil_img = _tensor_to_pil(image_plan)
-
-        # Hash para cache
-        img_hash = hashlib.md5(
-            pil_img.tobytes()[:4096]  # solo primeros bytes para speed
-        ).hexdigest()[:12]
-
+        img_hash = hashlib.md5(pil_img.tobytes()[:4096]).hexdigest()[:12]
         temp_dir = folder_paths.get_temp_directory()
         filename = f"floorplan_preview_{img_hash}.png"
         filepath = os.path.join(temp_dir, filename)
 
         if not os.path.exists(filepath):
-            # Resize for preview (max 1024px)
             preview = pil_img.copy()
             preview.thumbnail((1024, 1024), Image.LANCZOS)
             preview.save(filepath)
@@ -282,14 +253,10 @@ class FloorPlanCameraNode:
 
     @classmethod
     def IS_CHANGED(cls, image_plan, cam_x, cam_y, cam_rotation, **kwargs):
-        """Force re-execution when camera position/rotation changes."""
         return f"{cam_x:.4f}_{cam_y:.4f}_{cam_rotation:.2f}"
 
 
 # ─────────────────────────────────────────────────────────────
-# Registration
-# ─────────────────────────────────────────────────────────────
-
 NODE_CLASS_MAPPINGS = {
     "FloorPlanCameraNode": FloorPlanCameraNode,
     "MaterialRefNode": MaterialRefNode,
